@@ -9,7 +9,7 @@ cache:
 install:
   - cabal update
   - cabal install happy
-  - cabal install "aeson < 0.11" github/ --disable-library-profiling || (cat /home/travis/.cabal/logs/github-0.15.0.log && false)
+  - cabal install "aeson < 0.11" --disable-library-profiling
   - cabal install --only-dependencies --enable-tests --enable-benchmarks
 
 script:
