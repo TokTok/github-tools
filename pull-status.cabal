@@ -16,7 +16,7 @@ source-repository head
   location:         https://github.com/TokTok/pull-status.git
 
 executable pull-status
-  main-is:             Main.hs
+  main-is:             pull-status.hs
   ghc-options:
       -Wall
   build-depends:
@@ -33,6 +33,24 @@ executable pull-status
     , tagsoup
     , text
     , time
+    , vector
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+executable changelog
+  main-is:             changelog.hs
+  ghc-options:
+      -Wall
+  build-depends:
+      base >= 4 && < 5
+    , bytestring
+    , containers
+    , exceptions
+    , github          >= 0.15.0
+    , groom
+    , http-client
+    , http-client-tls
+    , text
     , vector
   hs-source-dirs:      src
   default-language:    Haskell2010

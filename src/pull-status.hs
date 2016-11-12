@@ -2,10 +2,8 @@
 module Main (main) where
 
 import           Control.Applicative     ((<$>))
-import           Control.Monad.Catch     (throwM)
 import qualified Control.Monad.Parallel  as Parallel
 import qualified Data.ByteString.Char8   as BS8
-import qualified Data.Text               as Text
 import           Data.Time.Clock         (getCurrentTime)
 import qualified Data.Vector             as V
 import qualified GitHub
@@ -16,19 +14,8 @@ import           System.Environment      (getEnv, lookupEnv)
 
 import           PullRequestInfo         (PullRequestInfo (PullRequestInfo))
 import qualified PullRequestInfo
+import           Requests
 import qualified Review
-
-
-request
-  :: GitHub.Auth
-  -> Manager
-  -> GitHub.Request k a
-  -> IO a
-request auth mgr req = do
-  possiblePRs <- GitHub.executeRequestWithMgr mgr auth req
-  case possiblePRs of
-    Left  err -> throwM err
-    Right res -> return res
 
 
 getFullPr
@@ -39,7 +26,6 @@ getFullPr
   -> GitHub.SimplePullRequest
   -> IO GitHub.PullRequest
 getFullPr auth mgr owner repo simplePr = do
-  -- hPutStrLn stderr $ "getting PR info for #" ++ show (GitHub.simplePullRequestNumber simplePr)
   request auth mgr
     . GitHub.pullRequestR owner repo
     . GitHub.Id
@@ -73,10 +59,6 @@ getPrsForRepo
   -> IO [PullRequestInfo]
 getPrsForRepo auth mgr ownerName repoName = do
   -- Get PR list.
-  -- hPutStrLn stderr $ "getting PR list for " ++
-    -- Text.unpack (GitHub.untagName ownerName) ++
-    -- "/" ++
-    -- Text.unpack (GitHub.untagName repoName)
   simplePRs <- V.toList <$> request auth mgr (GitHub.pullRequestsForR ownerName repoName GitHub.stateOpen GitHub.FetchAll)
 
   prInfos <- Parallel.mapM (getPrInfo auth mgr ownerName repoName) simplePRs
@@ -100,7 +82,6 @@ main = do
   mgr <- newManager tlsManagerSettings
 
   -- Get repo list.
-  -- hPutStrLn stderr $ "getting repo list for " ++ Text.unpack (GitHub.untagName ownerName)
   repos <- V.toList <$> request auth mgr (GitHub.organizationReposR orgName GitHub.RepoPublicityAll GitHub.FetchAll)
   let repoNames = map GitHub.repoName repos
 
