@@ -9,7 +9,7 @@ import           Network.HTTP.Client (Manager)
 request
   :: Maybe GitHub.Auth
   -> Manager
-  -> GitHub.Request GitHub.RO a
+  -> GitHub.Request 'GitHub.RO a
   -> IO a
 request auth mgr req = do
   response <- executeRequest

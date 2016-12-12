@@ -1,32 +1,33 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Main (main) where
+module Changelogs
+  ( fetchChangeLog
+  , formatChangeLog
+  , ChangeLog
+  ) where
 
 import           Control.Applicative     ((<$>), (<*>))
 import           Control.Arrow           (first, second, (&&&))
-import qualified Data.ByteString.Char8   as BS8
 import           Data.List               (foldl')
 import qualified Data.Map                as Map
 import qualified Data.Maybe              as Maybe
 import           Data.Monoid             ((<>))
-import           Data.String             (fromString)
 import           Data.Text               (Text)
 import qualified Data.Text               as Text
 import qualified Data.Vector             as V
 import qualified GitHub
 import           Network.HTTP.Client     (newManager)
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
-import           System.Environment      (getArgs, lookupEnv)
 -- import           Text.Groom              (groom)
 
 import           Requests
 
 
-type ChangeLog = [(Text, [Text], [Text])]
+newtype ChangeLog = ChangeLog { unChangeLog :: [(Text, [Text], [Text])] }
 
 
-formatChangeLog :: Text -> ChangeLog -> Text
-formatChangeLog name = (<> "\n") . foldl' (<>) ("# Changelog for " <> name) . map formatMilestone
+formatChangeLog :: ChangeLog -> Text
+formatChangeLog = (<> "\n") . foldl' (<>) "" . map formatMilestone . unChangeLog
   where
     formatMilestone (milestone, issues, pulls) =
       "\n\n## " <> milestone
@@ -66,7 +67,8 @@ formatChangeLogItem ownerName repoName item =
 
 makeChangeLog :: GitHub.Name GitHub.Owner -> GitHub.Name GitHub.Repo -> [GitHub.SimplePullRequest] -> [GitHub.Issue] -> ChangeLog
 makeChangeLog ownerName repoName pulls issues =
-  Map.foldlWithKey (\changes milestone (msIssues, msPulls) ->
+  ChangeLog
+  . Map.foldlWithKey (\changes milestone (msIssues, msPulls) ->
       ( milestone
       , map (formatChangeLogItem ownerName repoName) msIssues
       , map (formatChangeLogItem ownerName repoName) msPulls
@@ -126,11 +128,8 @@ makeChangeLog ownerName repoName pulls issues =
       )
 
 
-fetchChangeLog :: GitHub.Name GitHub.Owner -> GitHub.Name GitHub.Repo -> IO ChangeLog
-fetchChangeLog ownerName repoName = do
-  -- Get auth token from the $GITHUB_TOKEN environment variable.
-  auth <- fmap (GitHub.OAuth . BS8.pack) <$> lookupEnv "GITHUB_TOKEN"
-
+fetchChangeLog :: GitHub.Name GitHub.Owner -> GitHub.Name GitHub.Repo -> Maybe GitHub.Auth -> IO ChangeLog
+fetchChangeLog ownerName repoName auth = do
   -- Initialise HTTP manager so we can benefit from keep-alive connections.
   mgr <- newManager tlsManagerSettings
 
@@ -140,19 +139,3 @@ fetchChangeLog ownerName repoName = do
   -- issues >>= putStrLn . groom
 
   makeChangeLog ownerName repoName <$> pulls <*> issues
-
-
-main :: IO ()
-main = do
-  (ownerName, repoName) <- getArgs >>= repoLocation
-  let name = (GitHub.untagName ownerName) <> "/" <> (GitHub.untagName repoName)
-
-  fetchChangeLog ownerName repoName >>= putStr . Text.unpack . formatChangeLog name
-
-  where
-    repoLocation [] =
-      return ("TokTok", "c-toxcore")
-    repoLocation [ownerName, repoName] =
-      return (fromString ownerName, fromString repoName)
-    repoLocation _ =
-      fail "Usage: changelog <owner> <repo>"

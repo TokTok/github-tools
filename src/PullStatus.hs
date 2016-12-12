@@ -1,16 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Main (main) where
+module PullStatus (getPullStatus) where
 
 import           Control.Applicative     ((<$>))
 import qualified Control.Monad.Parallel  as Parallel
-import qualified Data.ByteString.Char8   as BS8
 import           Data.Time.Clock         (getCurrentTime)
 import qualified Data.Vector             as V
 import qualified GitHub
 import qualified GitHub.Data.Id          as GitHub
 import           Network.HTTP.Client     (Manager, newManager)
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
-import           System.Environment      (getEnv, lookupEnv)
 
 import           PullRequestInfo         (PullRequestInfo (PullRequestInfo))
 import qualified PullRequestInfo
@@ -19,14 +16,14 @@ import qualified Review
 
 
 getFullPr
-  :: GitHub.Auth
+  :: Maybe GitHub.Auth
   -> Manager
   -> GitHub.Name GitHub.Owner
   -> GitHub.Name GitHub.Repo
   -> GitHub.SimplePullRequest
   -> IO GitHub.PullRequest
 getFullPr auth mgr owner repo simplePr = do
-  request (Just auth) mgr
+  request auth mgr
     . GitHub.pullRequestR owner repo
     . GitHub.Id
     . GitHub.simplePullRequestNumber
@@ -34,7 +31,7 @@ getFullPr auth mgr owner repo simplePr = do
 
 
 getPrInfo
-  :: GitHub.Auth
+  :: Maybe GitHub.Auth
   -> Manager
   -> GitHub.Name GitHub.Owner
   -> GitHub.Name GitHub.Repo
@@ -52,41 +49,36 @@ getPrInfo auth mgr ownerName repoName pr = do
 
 
 getPrsForRepo
-  :: GitHub.Auth
+  :: Maybe GitHub.Auth
   -> Manager
   -> GitHub.Name GitHub.Owner
   -> GitHub.Name GitHub.Repo
   -> IO [PullRequestInfo]
 getPrsForRepo auth mgr ownerName repoName = do
   -- Get PR list.
-  simplePRs <- V.toList <$> request (Just auth) mgr (GitHub.pullRequestsForR ownerName repoName GitHub.stateOpen GitHub.FetchAll)
+  simplePRs <- V.toList <$> request auth mgr (GitHub.pullRequestsForR ownerName repoName GitHub.stateOpen GitHub.FetchAll)
 
   prInfos <- Parallel.mapM (getPrInfo auth mgr ownerName repoName) simplePRs
 
   return $ map (uncurry $ PullRequestInfo repoName) prInfos
 
 
-main :: IO ()
-main = do
-  let orgName = "TokTok"
-  let ownerName = "TokTok"
-
-  -- Get auth token from the $GITHUB_TOKEN environment variable.
-  token <- BS8.pack <$> getEnv "GITHUB_TOKEN"
-  let auth = GitHub.OAuth token
-
-  -- Check if we need to produce HTML or ASCII art.
-  wantHtml <- (/= Nothing) <$> lookupEnv "GITHUB_WANT_HTML"
-
+getPullStatus
+  :: GitHub.Name GitHub.Organization
+  -> GitHub.Name GitHub.Owner
+  -> Bool
+  -> Maybe GitHub.Auth
+  -> IO String
+getPullStatus orgName ownerName wantHtml auth = do
   -- Initialise HTTP manager so we can benefit from keep-alive connections.
   mgr <- newManager tlsManagerSettings
 
   -- Get repo list.
-  repos <- V.toList <$> request (Just auth) mgr (GitHub.organizationReposR orgName GitHub.RepoPublicityAll GitHub.FetchAll)
+  repos <- V.toList <$> request auth mgr (GitHub.organizationReposR orgName GitHub.RepoPublicityAll GitHub.FetchAll)
   let repoNames = map GitHub.repoName repos
 
   infos <- Parallel.mapM (getPrsForRepo auth mgr ownerName) repoNames
 
   -- Pretty-print table with information.
   now <- getCurrentTime
-  putStrLn $ PullRequestInfo.formatPR wantHtml now infos
+  return $ PullRequestInfo.formatPR wantHtml now infos

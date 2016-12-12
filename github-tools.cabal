@@ -17,10 +17,11 @@ source-repository head
   type:             git
   location:         https://github.com/TokTok/github-tools.git
 
-executable pull-status
-  main-is:             pull-status.hs
-  other-modules:
+library
+  exposed-modules:
+      Changelogs
       PullRequestInfo
+      PullStatus
       Requests
       Review
   ghc-options:
@@ -28,6 +29,7 @@ executable pull-status
   build-depends:
       base >= 4 && < 5
     , bytestring
+    , containers
     , exceptions
     , github            >= 0.15.0
     , groom
@@ -43,22 +45,44 @@ executable pull-status
   hs-source-dirs:      src
   default-language:    Haskell2010
 
-executable changelog
-  main-is:             changelog.hs
-  other-modules:
-      Requests
+executable pull-status
+  main-is:             pull-status.hs
   ghc-options:
       -Wall
   build-depends:
       base >= 4 && < 5
+    , github-tools
     , bytestring
-    , containers
-    , exceptions
     , github            >= 0.15.0
-    , groom
-    , http-client
-    , http-client-tls
+  hs-source-dirs:      tools
+  default-language:    Haskell2010
+
+executable changelog
+  main-is:             changelog.hs
+  ghc-options:
+      -Wall
+  build-depends:
+      base >= 4 && < 5
+    , github-tools
+    , bytestring
+    , github            >= 0.15.0
     , text
-    , vector
-  hs-source-dirs:      src
+  hs-source-dirs:      tools
+  default-language:    Haskell2010
+
+executable webservice
+  main-is:             webservice.hs
+  ghc-options:
+      -Wall
+  build-depends:
+      base >= 4 && < 5
+    , github-tools
+    , aeson
+    , github            >= 0.15.0
+    , servant
+    , servant-server
+    , text
+    , wai
+    , warp
+  hs-source-dirs:      tools
   default-language:    Haskell2010
