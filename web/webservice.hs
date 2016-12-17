@@ -17,15 +17,17 @@ import qualified TokTok.Hello             as Hello
 import qualified TokTok.Webhooks          as Webhooks
 
 
-app :: Application
-app = mapUrls $
-      mount "hello" Hello.app
-  <|> mount "webhooks" Webhooks.app
+newApp :: IO Application
+newApp = do
+  helloApp <- Hello.newApp
+  return $ mapUrls $
+        mount "hello" helloApp
+    <|> mount "webhooks" Webhooks.app
 
 
 -- Run the server.
 runTestServer :: Port -> IO ()
-runTestServer port = run port app
+runTestServer port = run port =<< newApp
 
 -- Put this all to work!
 main :: IO ()

@@ -83,6 +83,7 @@ executable webservice
     , cryptohash
     , github            >= 0.15.0
     , http-types
+    , mtl
     , servant
     , servant-server
     , text
