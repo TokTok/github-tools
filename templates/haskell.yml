@@ -1,0 +1,107 @@
+# This is the Haskell base template. Every derived template in the end needs to
+# be derived from 'base'. The inherited template is written without its .yml
+# extension.
+inherits: base
+
+# Every Haskell leaf file needs to specify the package name and version. This
+# information is used in after_script to tell hpc-coveralls where to look for
+# the coverage data. A value of '???' is treated as an error in expansions. This
+# allows base packages to document the existence and requirement of certain
+# parameters while still forcing leaf files to actually define them rather than
+# having them be empty.
+package:
+  name: '???'
+  version: '???'
+
+# We have two separate cabal/ghc directories. The 'build' cabal is the one used
+# for the package being built as well as any user-provided cabal packages. The
+# 'tools' cabal is used for hpc-coveralls, stylish-haskell, and hlint. We keep
+# these separate because they have complicated dependencies that can (and
+# sometimes do) interfere with the actual user package we want to test. In the
+# future we may want to share the -tools directories across all repositories,
+# because they are going to end up being identical.
+cache:
+  directories:
+    - $HOME/.cabal-build
+    - $HOME/.cabal-tools
+    - $HOME/.ghc-build
+    - $HOME/.ghc-tools
+
+# This is not used by Travis, but instead the values can be used in other parts
+# of the configuration. We can't use environment variables in addons for
+# instance, so to deduplicate the numbers and allow derived templates to
+# override this value in a single place, we use dynamically scoped %% variable
+# expansions.
+haskell:
+  cabal: 1.18
+  ghc: 7.8.4
+  # Leaf files can specify extra packages (like semdoc or pandoc) to be
+  # installed in the same cabal as their package dependencies. In expansions,
+  # arrays of strings are joined with a space. E.g. [semdoc, pandoc] will end up
+  # as "semdoc pandoc" in a %haskell.packages% expansion.
+  packages: []
+
+env: CABALVER=%haskell.cabal% GHCVER=%haskell.ghc%
+addons:
+  apt:
+    sources:
+      - hvr-ghc
+    packages:
+      - alex-3.1.7
+      - happy-1.19.5
+      - cabal-install-%haskell.cabal%
+      - ghc-%haskell.ghc%
+
+# The install, script, after_script, and other shell script listings have a
+# 'before' and 'after' value. This tells the generator whether to prepend or
+# append that snippet to the inherited snippet.
+install:
+  after:
+    # Only one .cabal should be on $PATH at any time. This is to avoid issues
+    # with hlint not being able to find its data, because it expects it to be in
+    # $HOME/.ghc, not in wherever it actually currently lives. The errors are
+    # confusing, so we make this a little stricter than necessary to avoid them.
+    - export PATH=$HOME/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/alex/3.1.7/bin:/opt/happy/1.19.5/bin:$PATH
+    # Get old cabal out of the way.
+    - rm -rf $HOME/.cabal $HOME/.ghc
+    # Update tools cabal.
+    - mkdir -p $HOME/.cabal-tools $HOME/.ghc-tools
+    - rm -f $HOME/.cabal && ln -s $HOME/.cabal-tools $HOME/.cabal
+    - rm -f $HOME/.ghc && ln -s $HOME/.ghc-tools $HOME/.ghc
+    - cabal update
+    # Update build cabal.
+    - mkdir -p $HOME/.cabal-build $HOME/.ghc-build
+    - rm -f $HOME/.cabal && ln -s $HOME/.cabal-build $HOME/.cabal
+    - rm -f $HOME/.ghc && ln -s $HOME/.ghc-build $HOME/.ghc
+    - cabal update
+
+script:
+  after:
+    # Install common tools separately in the tools directory, because they have
+    # incompatible dependencies.
+    - rm -f $HOME/.cabal && ln -s $HOME/.cabal-tools $HOME/.cabal
+    - rm -f $HOME/.ghc && ln -s $HOME/.ghc-tools $HOME/.ghc
+    - cabal install hpc-coveralls stylish-haskell hlint aeson-0.9.0.1
+    - curl https://raw.githubusercontent.com/TokTok/toktok-stack/master/tools/stylish-haskell-lhs -o $HOME/.cabal/bin/stylish-haskell-lhs
+    - chmod +x $HOME/.cabal/bin/stylish-haskell-lhs
+    # Do the style checks.
+    - hlint .
+    - stylish-haskell-lhs -i .
+    # Check that stylish-haskell had no effect.
+    - git diff
+    # Install package dependencies in the build cabal.
+    - rm -f $HOME/.cabal && ln -s $HOME/.cabal-build $HOME/.cabal
+    - rm -f $HOME/.ghc && ln -s $HOME/.ghc-build $HOME/.ghc
+    - cabal install --enable-tests --enable-benchmarks --only-dependencies ./ %haskell.packages%
+    - if [ -n "%haskell.packages%" ]; then cabal install %haskell.packages%; fi
+    # Now to the actual build.
+    - cabal configure --enable-tests --enable-benchmarks --enable-library-coverage
+    - cabal test
+    - cabal check
+
+after_script:
+  after:
+    # hpc-coveralls is in the tools cabal.
+    - rm -f $HOME/.cabal && ln -s $HOME/.cabal-tools $HOME/.cabal
+    - rm -f $HOME/.ghc && ln -s $HOME/.ghc-tools $HOME/.ghc
+    - hpc-coveralls %package.name%-%package.version%

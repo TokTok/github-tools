@@ -18,7 +18,6 @@ import           Data.Text.Encoding    (encodeUtf8)
 import           GHC.Generics          (Generic)
 import qualified GitHub
 import           Network.HTTP.Media    ((//), (/:))
-import           Network.Wai           (Application)
 import           Servant
 import           System.Environment    (getEnv)
 

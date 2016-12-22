@@ -1,0 +1,8 @@
+# The 'haskell' template is looked up first in the current directory and then in
+# the 'templates' directory. The templates directory location is known to the
+# generator tool.
+inherits: haskell
+
+package:
+  name: github-tools
+  version: 0.1.1

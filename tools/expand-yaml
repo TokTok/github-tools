@@ -1,0 +1,172 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings FATAL => 'all';
+use utf8;
+
+use Cwd 'abs_path';
+use Data::Dumper;
+use Dir::Self;
+use File::Basename;
+use YAML::XS qw/LoadFile DumpFile/;
+
+local $Data::Dumper::Indent   = 1;
+local $Data::Dumper::Sortkeys = 1;
+local $Data::Dumper::Terse    = 1;
+
+my $TEMPLATES = __DIR__ . '/../templates';
+
+# Recursively load files and replace 'inherits' fields with the actual parsed
+# file contents.
+sub load_file {
+   my ($input) = @_;
+   return unless -f $input;
+   my $leaf = LoadFile $input;
+
+   if ($leaf->{inherits}) {
+      $leaf->{inherits} = do {
+         my $local_dir = dirname $input;
+         0  or load_file("$local_dir/$leaf->{inherits}.yml")
+            or load_file("$TEMPLATES/$leaf->{inherits}.yml");
+      };
+   }
+
+   $leaf
+}
+
+sub check_type {
+   my ($name, $a, $b) = @_;
+   if (defined $a and defined $b) {
+      my $aref = ref $a;
+      my $bref = ref $b;
+      if ($aref ne $bref) {
+         die "type of $name is '$aref' in derived data but '$bref' in inherited";
+      }
+   }
+}
+
+# Recursively merge two data structures. The two parameters are expected to be
+# hash references.
+sub recursive_merge {
+   my ($dst, $src) = @_;
+   check_type 'value', $dst, $src;
+   for my $field (sort keys %$src) {
+      check_type $field, $dst->{$field}, $src->{$field};
+
+      for (ref $src->{$field}) {
+         if ($_ eq 'HASH') {
+            if (exists $dst->{$field}) {
+               recursive_merge($dst->{$field}, $src->{$field});
+            } else {
+               $dst->{$field} = $src->{$field};
+            }
+         } elsif ($_ eq 'ARRAY') {
+            if ($field eq 'after') {
+               unshift @{ $dst->{$field} }, @{ $src->{$field} };
+            } else {
+               push @{ $dst->{$field} }, @{ $src->{$field} };
+            }
+         } elsif ($_ eq '') {
+            $dst->{$field} //= $src->{$field};
+         } else {
+            die "unhandled ref type: $_";
+         }
+      }
+   }
+}
+
+# Merge the inherited templates into one. This starts from the leaf and fills in
+# all fields that are not yet set. Also, 'before' and 'after' fields are
+# concatenated such that the inherited 'before' comes after the derived one, and
+# the inherited 'after' comes before the derived one.
+#
+# Inheritance is resolved depth-first. I.e. the deepest level is merged first,
+# and the leaf is merged last.
+sub process_inherits {
+   my ($data) = @_;
+
+   if (my $parent = delete $data->{inherits}) {
+      process_inherits($parent);
+
+      # At this point, $parent is fully merged.
+      recursive_merge($data, $parent);
+   }
+}
+
+sub process_expansions {
+   my ($data, $cur) = @_;
+
+   for (ref $cur) {
+      if ($_ eq 'HASH') {
+         for my $k (keys %$cur) {
+            $cur->{$k} = process_expansions($data, $cur->{$k});
+         }
+      } elsif ($_ eq 'ARRAY') {
+         for my $i (0 .. $#$cur) {
+            $cur->[$i] = process_expansions($data, $cur->[$i]);
+         }
+      } elsif ($_ eq '') {
+         if (my @expansions = $cur =~ /%([^%]+)%/g) {
+            # Perform lookups and collect actual values.
+            @expansions = map {
+               my @path = split /\./;
+               my $v = $data;
+               for my $p (@path) {
+                  die "could not resolve '$_'"
+                     unless exists $v->{$p};
+                  $v = $v->{$p};
+                  die "variable '$_' has value '???', which means it must be overridden"
+                     if $v eq '???';
+               }
+               
+               if (ref $v eq 'HASH') {
+                  die "'$_' expanded to an object and can't be interpolated"
+               } elsif (ref $v eq 'ARRAY') {
+                  join ' ', @$v
+               } elsif (ref $v eq '') {
+                  $v
+               } else {
+                  die "'$_' expanded to an object of unknown type: " . ref $v
+               }
+            } @expansions;
+
+            # Perform the actual text replacements.
+            for my $text (@expansions) {
+               $cur =~ s/%([^%]+)%/$text/;
+            }
+
+            # Strip resulting text of leading and trailing whitespace.
+            $cur =~ s/^\s+//;
+            $cur =~ s/\s+$//;
+         }
+      } else {
+         die "unhandled type: '$_'"
+      }
+   }
+
+   $cur
+}
+
+sub process_before_after {
+   my ($data) = @_;
+
+   for my $k (keys %$data) {
+      my $v = $data->{$k};
+      if (ref $v eq 'HASH' and (exists $v->{before} or exists $v->{after})) {
+         $data->{$k} = [
+            @{ $v->{before} || [] },
+            @{ $v->{after} || [] },
+         ];
+      }
+   }
+}
+
+my ($input, $output) = @ARGV;
+$input and $output or die "Usage: expand-yaml <input.yml> <output.yml>";
+
+my $data = load_file (abs_path $input);
+process_inherits $data;
+process_expansions $data, $data;
+process_before_after $data;
+
+DumpFile $output, $data;

@@ -1,0 +1,10 @@
+# Base template for all Travis jobs. The language variable can be overridden in
+# derived templates or leaf files. No env, addons, script, or anything is
+# defined in this template, because there is currently nothing that needs to be
+# done on every single build.
+language: generic
+
+# This probably shouldn't be overridden.
+branches:
+  only:
+    - master
