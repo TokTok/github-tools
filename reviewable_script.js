@@ -11,11 +11,11 @@
 
 
 
-const numReviewersRequired = 2; // Must be 1 less than the number desired...
+const numReviewersRequired = 3; // TODO do we want to calculate this number by size of diff, or number of files?
 // Part 1 Check that each file has been reviewed by at least numReviewersRequired at the latest revision.
 const unreviewedFiles = _(review.files)
-                         .filter(file => _.size(_.last(file.revisions).reviewers) <= numReviewersRequired)
-                         .value();
+  .filter(file => _.size(_.last(file.revisions).reviewers) < numReviewersRequired)
+    .value();
 
 // Part 2 Verify there are no open comments of assigned reviewers
 const fileBlockers = _(unreviewedFiles)
@@ -71,7 +71,7 @@ const lgtmBlockers = _.filter(assignees, username => !_.has(approvals, username)
 
 // Part 4 Check that a trusted reviewer has a current LGTM.
 const trustedReviewers = ['GrayHatter', 'iphydf', 'nurupo'];
-const admin_approved = _.some(trustedReviewers, username => approvals[username]);
+const adminApproved = _.some(trustedReviewers, username => approvals[username]);
 
 // Combine the above to compute final status
 const completed = !unreviewedFiles.length && !unresolvedDiscussions.length && !lgtmBlockers.length && admin_approved;
@@ -87,18 +87,15 @@ if (unreviewedFiles.length) {
   descriptionPieces.push(`${unreviewedFiles.length} files need more reviewers`);
 }
 if (unresolvedDiscussions.length) {
-  if (unresolvedDiscussions.length > 2) {
-    descriptionPieces.push(`${unresolvedDiscussions.length} open discussions remaining`);
-  } else {
-    descriptionPieces.push(`${unresolvedDiscussions.length} open discussion remaining`);
-  }
+  const s = unresolvedDiscussions.length == 1 ? '' : 's';
+  descriptionPieces.push(`${unresolvedDiscussions.length} open discussion${s} remaining`);
 }
 if (lgtmBlockers.length) {
   descriptionPieces.push(`${lgtmBlockers.length} assignee LGTMs are missing`);
 }
 
 if (!admin_approved) {
-  descriptionPieces.push(`Missing Admin LGTM at current revision.`);
+  descriptionPieces.push(`missing Admin LGTM at current revision.`);
 }
 
 return {
