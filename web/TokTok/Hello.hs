@@ -9,6 +9,7 @@
 module TokTok.Hello (newApp) where
 
 import           Control.Applicative   ((<$>), (<*>))
+import           Control.Monad.Trans   (lift)
 import           Data.Aeson            (FromJSON, ToJSON)
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy  as LBS
@@ -26,13 +27,14 @@ import           Servant
 import           System.Environment    (getEnv)
 
 import qualified Changelogs
+import           PullRequestInfo       (PullRequestInfo)
 import qualified PullStatus
 
 
 data ApiContext = ApiContext
   { getChangelog :: Changelogs.ChangeLog
   , getRoadmap   :: Changelogs.ChangeLog
-  , getPulls     :: Text
+  , pullInfos    :: [[PullRequestInfo]]
   }
 
 
@@ -43,7 +45,7 @@ newContext = do
   ApiContext
     <$> Changelogs.fetchChangeLog False "TokTok" "c-toxcore" Nothing
     <*> Changelogs.fetchChangeLog True  "TokTok" "c-toxcore" Nothing
-    <*> (Text.pack <$> PullStatus.getPullStatus "TokTok" "TokTok" True auth)
+    <*> PullStatus.getPullInfos "TokTok" "TokTok" auth
 
 
 -- * Example
@@ -68,7 +70,8 @@ type TestApi =
 
   :<|> "changelog" :> Get '[PlainText] Text
   :<|> "roadmap" :> Get '[PlainText] Text
-  :<|> "pulls" :> Get '[HTML] Text
+  :<|> "pulls.html" :> Get '[HTML] Text
+  :<|> "pulls" :> Get '[JSON] [[PullRequestInfo]]
 
        -- POST /greet with a Greet as JSON in the request body,
        --             returns a Greet as JSON
@@ -91,6 +94,7 @@ server ctx =
        helloH
   :<|> changelogH False
   :<|> changelogH True
+  :<|> pullsHtmlH
   :<|> pullsH
   :<|> postGreetH
   :<|> deleteGreetH
@@ -102,7 +106,8 @@ server ctx =
     changelogH False = return $ Changelogs.formatChangeLog False (getChangelog ctx)
     changelogH True  = return $ Changelogs.formatChangeLog True  (getRoadmap ctx)
 
-    pullsH = return $ getPulls ctx
+    pullsHtmlH = lift $ PullStatus.showPullInfos True $ pullInfos ctx
+    pullsH = return $ pullInfos ctx
 
     postGreetH = return
 

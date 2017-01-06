@@ -3,6 +3,7 @@ module Main (main) where
 
 import           Control.Applicative   ((<$>))
 import qualified Data.ByteString.Char8 as BS8
+import qualified Data.Text             as Text
 import qualified GitHub
 import           System.Environment    (getEnv, lookupEnv)
 
@@ -17,4 +18,4 @@ main = do
   -- Check if we need to produce HTML or ASCII art.
   wantHtml <- (/= Nothing) <$> lookupEnv "GITHUB_WANT_HTML"
 
-  putStrLn =<< getPullStatus "TokTok" "TokTok" wantHtml auth
+  putStrLn . Text.unpack =<< getPullStatus "TokTok" "TokTok" wantHtml auth
