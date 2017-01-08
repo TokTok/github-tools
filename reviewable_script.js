@@ -74,11 +74,11 @@ const trustedReviewers = ['GrayHatter', 'iphydf', 'nurupo'];
 const adminApproved = _.some(trustedReviewers, username => approvals[username]);
 
 // Combine the above to compute final status
-const completed = !unreviewedFiles.length && !unresolvedDiscussions.length && !lgtmBlockers.length && admin_approved;
+const completed = !unreviewedFiles.length && !unresolvedDiscussions.length && !lgtmBlockers.length && adminApproved;
 
 // Generate the status message
 const pendingReviewers = _(fileBlockers)
-  .concat(discussionBlockers, lgtmBlockers, admin_approved ? [] : trustedReviewers)
+  .concat(discussionBlockers, lgtmBlockers, adminApproved ? [] : trustedReviewers)
   .uniq()
   .value();
 
@@ -94,7 +94,7 @@ if (lgtmBlockers.length) {
   descriptionPieces.push(`${lgtmBlockers.length} assignee LGTMs are missing`);
 }
 
-if (!admin_approved) {
+if (!adminApproved) {
   descriptionPieces.push(`missing Admin LGTM at current revision.`);
 }
 
