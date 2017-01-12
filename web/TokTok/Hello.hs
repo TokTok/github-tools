@@ -86,8 +86,11 @@ instance MimeRender HTML Text where
 
 -- API specification
 type TestApi =
+       -- Link to the source code repository, to comply with AGPL.
+       "source" :> Get '[PlainText] Text
+
        -- GET /hello/:name?capital={true, false}  returns a Greet as JSON
-       "hello" :> Capture "name" Text :> QueryParam "capital" Bool :> Get '[JSON] Greet
+  :<|> "hello" :> Capture "name" Text :> QueryParam "capital" Bool :> Get '[JSON] Greet
 
   :<|> "changelog" :> Get '[PlainText] Text
   :<|> "roadmap" :> Get '[PlainText] Text
@@ -112,7 +115,8 @@ testApi = Proxy
 -- Each handler runs in the 'Handler' monad.
 server :: ApiContext -> Server TestApi
 server ctx =
-       helloH
+       sourceH
+  :<|> helloH
   :<|> changelogH False
   :<|> changelogH True
   :<|> pullsHtmlH
@@ -120,6 +124,8 @@ server ctx =
   :<|> postGreetH
   :<|> deleteGreetH
   where
+    sourceH = return "https://github.com/TokTok/github-tools"
+
     helloH name Nothing      = helloH name (Just False)
     helloH name (Just False) = return . Greet $ "Hello, " <> name
     helloH name (Just True)  = return . Greet . Text.toUpper $ "Hello, " <> name
