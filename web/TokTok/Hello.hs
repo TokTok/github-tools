@@ -30,6 +30,7 @@ import           Network.HTTP.Media               ((//), (/:))
 import           Network.Wai                      (Application)
 #endif
 import           Servant
+import           Servant.Server                   (Handler)
 import           System.Environment               (getEnv)
 
 import qualified Changelogs
@@ -113,7 +114,7 @@ testApi = Proxy
 -- that represents the API, are glued together using :<|>.
 --
 -- Each handler runs in the 'Handler' monad.
-server :: ApiContext -> Server TestApi
+server :: ApiContext -> Handler TestApi
 server ctx =
        sourceH
   :<|> helloH
