@@ -40,6 +40,7 @@ library
       GitHub.Types.Base.Issue
       GitHub.Types.Base.IssueComment
       GitHub.Types.Base.Label
+      GitHub.Types.Base.License
       GitHub.Types.Base.Link
       GitHub.Types.Base.Membership
       GitHub.Types.Base.Milestone
@@ -63,6 +64,7 @@ library
       GitHub.Types.Base.User
       GitHub.Types.Base.UserRef
       GitHub.Types.Base.UserStamp
+      GitHub.Types.Base.Verification
       GitHub.Types.Event
       GitHub.Types.Events
       GitHub.Types.Events.CommitCommentEvent
@@ -98,7 +100,7 @@ library
       -Wall
   build-depends:
       base >= 4 && < 5
-    , aeson
+    , aeson             >= 0.8.1.0
     , bytestring
     , containers
     , cryptohash
@@ -166,7 +168,7 @@ executable webservice
   build-depends:
       base >= 4 && < 5
     , github-tools
-    , aeson
+    , aeson             >= 0.8.1.0
     , bytestring
     , case-insensitive
     , expiring-cache-map
@@ -208,7 +210,7 @@ test-suite testsuite
       -threaded
   build-depends:
       base < 5
-    , aeson
+    , aeson             >= 0.8.1.0
     , github-tools
     , hspec
     , QuickCheck

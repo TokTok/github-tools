@@ -20,89 +20,93 @@ import           GitHub.Types.Base.User
 -- Issue
 
 data Issue = Issue
-    { issueState         :: Text
-    , issueAssignees     :: [User]
-    , issueLocked        :: Bool
-    , issueBody          :: Text
-    , issueUrl           :: Text
-    , issuePullRequest   :: Maybe PullRequestRef
-    , issueMilestone     :: Maybe Milestone
-    , issueAssignee      :: Maybe User
-    , issueUser          :: User
-    , issueCommentsUrl   :: Text
-    , issueUpdatedAt     :: DateTime
-    , issueCreatedAt     :: DateTime
-    , issueId            :: Int
-    , issueLabels        :: [Label]
-    , issueComments      :: Int
-    , issueTitle         :: Text
-    , issueClosedAt      :: Maybe DateTime
-    , issueNumber        :: Int
-    , issueEventsUrl     :: Text
-    , issueRepositoryUrl :: Text
-    , issueLabelsUrl     :: Text
-    , issueHtmlUrl       :: Text
+    { issueAssignee          :: Maybe User
+    , issueAssignees         :: [User]
+    , issueAuthorAssociation :: Text
+    , issueBody              :: Text
+    , issueClosedAt          :: Maybe DateTime
+    , issueComments          :: Int
+    , issueCommentsUrl       :: Text
+    , issueCreatedAt         :: DateTime
+    , issueEventsUrl         :: Text
+    , issueHtmlUrl           :: Text
+    , issueId                :: Int
+    , issueLabels            :: [Label]
+    , issueLabelsUrl         :: Text
+    , issueLocked            :: Bool
+    , issueMilestone         :: Maybe Milestone
+    , issueNumber            :: Int
+    , issuePullRequest       :: Maybe PullRequestRef
+    , issueRepositoryUrl     :: Text
+    , issueState             :: Text
+    , issueTitle             :: Text
+    , issueUpdatedAt         :: DateTime
+    , issueUrl               :: Text
+    , issueUser              :: User
     } deriving (Eq, Show, Read)
 
 
 instance FromJSON Issue where
     parseJSON (Object x) = Issue
-        <$> x .: "state"
+        <$> x .: "assignee"
         <*> x .: "assignees"
-        <*> x .: "locked"
+        <*> x .: "author_association"
         <*> x .: "body"
-        <*> x .: "url"
-        <*> x .:? "pull_request"
-        <*> x .: "milestone"
-        <*> x .: "assignee"
-        <*> x .: "user"
+        <*> x .: "closed_at"
+        <*> x .: "comments"
         <*> x .: "comments_url"
-        <*> x .: "updated_at"
         <*> x .: "created_at"
+        <*> x .: "events_url"
+        <*> x .: "html_url"
         <*> x .: "id"
         <*> x .: "labels"
-        <*> x .: "comments"
-        <*> x .: "title"
-        <*> x .: "closed_at"
-        <*> x .: "number"
-        <*> x .: "events_url"
-        <*> x .: "repository_url"
         <*> x .: "labels_url"
-        <*> x .: "html_url"
+        <*> x .: "locked"
+        <*> x .: "milestone"
+        <*> x .: "number"
+        <*> x .:? "pull_request"
+        <*> x .: "repository_url"
+        <*> x .: "state"
+        <*> x .: "title"
+        <*> x .: "updated_at"
+        <*> x .: "url"
+        <*> x .: "user"
 
     parseJSON _ = fail "Issue"
 
 
 instance ToJSON Issue where
     toJSON Issue{..} = object
-        [ "state"          .= issueState
-        , "assignees"      .= issueAssignees
-        , "locked"         .= issueLocked
-        , "body"           .= issueBody
-        , "url"            .= issueUrl
-        , "pull_request"   .= issuePullRequest
-        , "milestone"      .= issueMilestone
-        , "assignee"       .= issueAssignee
-        , "user"           .= issueUser
-        , "comments_url"   .= issueCommentsUrl
-        , "updated_at"     .= issueUpdatedAt
-        , "created_at"     .= issueCreatedAt
-        , "id"             .= issueId
-        , "labels"         .= issueLabels
-        , "comments"       .= issueComments
-        , "title"          .= issueTitle
-        , "closed_at"      .= issueClosedAt
-        , "number"         .= issueNumber
-        , "events_url"     .= issueEventsUrl
-        , "repository_url" .= issueRepositoryUrl
-        , "labels_url"     .= issueLabelsUrl
-        , "html_url"       .= issueHtmlUrl
+        [ "assignee"           .= issueAssignee
+        , "assignees"          .= issueAssignees
+        , "author_association" .= issueAuthorAssociation
+        , "body"               .= issueBody
+        , "closed_at"          .= issueClosedAt
+        , "comments"           .= issueComments
+        , "comments_url"       .= issueCommentsUrl
+        , "created_at"         .= issueCreatedAt
+        , "events_url"         .= issueEventsUrl
+        , "html_url"           .= issueHtmlUrl
+        , "id"                 .= issueId
+        , "labels"             .= issueLabels
+        , "labels_url"         .= issueLabelsUrl
+        , "locked"             .= issueLocked
+        , "milestone"          .= issueMilestone
+        , "number"             .= issueNumber
+        , "pull_request"       .= issuePullRequest
+        , "repository_url"     .= issueRepositoryUrl
+        , "state"              .= issueState
+        , "title"              .= issueTitle
+        , "updated_at"         .= issueUpdatedAt
+        , "url"                .= issueUrl
+        , "user"               .= issueUser
         ]
 
 
 instance Arbitrary Issue where
     arbitrary = Issue
         <$> arbitrary
+        <*> arbitrary
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary

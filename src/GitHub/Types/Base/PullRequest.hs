@@ -22,6 +22,7 @@ data PullRequest = PullRequest
     { pullRequestAdditions           :: Int
     , pullRequestAssignee            :: Maybe User
     , pullRequestAssignees           :: [User]
+    , pullRequestAuthorAssociation   :: Text
     , pullRequestBase                :: Commit
     , pullRequestBody                :: Text
     , pullRequestChangedFiles        :: Int
@@ -49,6 +50,7 @@ data PullRequest = PullRequest
     , pullRequestMilestone           :: Maybe Milestone
     , pullRequestNumber              :: Int
     , pullRequestPatchUrl            :: Text
+    , pullRequestRebaseable          :: Maybe Bool
     , pullRequestRequestedReviewers  :: [Text]
     , pullRequestReviewComments      :: Int
     , pullRequestReviewCommentsUrl   :: Text
@@ -67,6 +69,7 @@ instance FromJSON PullRequest where
         <$> x .: "additions"
         <*> x .: "assignee"
         <*> x .: "assignees"
+        <*> x .: "author_association"
         <*> x .: "base"
         <*> x .: "body"
         <*> x .: "changed_files"
@@ -94,6 +97,7 @@ instance FromJSON PullRequest where
         <*> x .: "milestone"
         <*> x .: "number"
         <*> x .: "patch_url"
+        <*> x .: "rebaseable"
         <*> x .: "requested_reviewers"
         <*> x .: "review_comments"
         <*> x .: "review_comments_url"
@@ -113,6 +117,7 @@ instance ToJSON PullRequest where
         [ "additions"             .= pullRequestAdditions
         , "assignee"              .= pullRequestAssignee
         , "assignees"             .= pullRequestAssignees
+        , "author_association"    .= pullRequestAuthorAssociation
         , "base"                  .= pullRequestBase
         , "body"                  .= pullRequestBody
         , "changed_files"         .= pullRequestChangedFiles
@@ -140,6 +145,7 @@ instance ToJSON PullRequest where
         , "milestone"             .= pullRequestMilestone
         , "number"                .= pullRequestNumber
         , "patch_url"             .= pullRequestPatchUrl
+        , "rebaseable"            .= pullRequestRebaseable
         , "requested_reviewers"   .= pullRequestRequestedReviewers
         , "review_comments"       .= pullRequestReviewComments
         , "review_comments_url"   .= pullRequestReviewCommentsUrl
@@ -156,6 +162,8 @@ instance ToJSON PullRequest where
 instance Arbitrary PullRequest where
     arbitrary = PullRequest
         <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary

@@ -15,47 +15,51 @@ import           GitHub.Types.Base.User
 -- IssueComment
 
 data IssueComment = IssueComment
-    { issueCommentBody      :: Text
-    , issueCommentUrl       :: Text
-    , issueCommentUser      :: User
-    , issueCommentUpdatedAt :: DateTime
-    , issueCommentCreatedAt :: DateTime
-    , issueCommentId        :: Int
-    , issueCommentIssueUrl  :: Text
-    , issueCommentHtmlUrl   :: Text
+    { issueCommentAuthorAssociation :: Text
+    , issueCommentBody              :: Text
+    , issueCommentCreatedAt         :: DateTime
+    , issueCommentHtmlUrl           :: Text
+    , issueCommentId                :: Int
+    , issueCommentIssueUrl          :: Text
+    , issueCommentUpdatedAt         :: DateTime
+    , issueCommentUrl               :: Text
+    , issueCommentUser              :: User
     } deriving (Eq, Show, Read)
 
 
 instance FromJSON IssueComment where
     parseJSON (Object x) = IssueComment
-        <$> x .: "body"
-        <*> x .: "url"
-        <*> x .: "user"
-        <*> x .: "updated_at"
+        <$> x .: "author_association"
+        <*> x .: "body"
         <*> x .: "created_at"
+        <*> x .: "html_url"
         <*> x .: "id"
         <*> x .: "issue_url"
-        <*> x .: "html_url"
+        <*> x .: "updated_at"
+        <*> x .: "url"
+        <*> x .: "user"
 
     parseJSON _ = fail "IssueComment"
 
 
 instance ToJSON IssueComment where
     toJSON IssueComment{..} = object
-        [ "body"       .= issueCommentBody
-        , "url"        .= issueCommentUrl
-        , "user"       .= issueCommentUser
-        , "updated_at" .= issueCommentUpdatedAt
-        , "created_at" .= issueCommentCreatedAt
-        , "id"         .= issueCommentId
-        , "issue_url"  .= issueCommentIssueUrl
-        , "html_url"   .= issueCommentHtmlUrl
+        [ "author_association" .= issueCommentAuthorAssociation
+        , "body"               .= issueCommentBody
+        , "created_at"         .= issueCommentCreatedAt
+        , "html_url"           .= issueCommentHtmlUrl
+        , "id"                 .= issueCommentId
+        , "issue_url"          .= issueCommentIssueUrl
+        , "updated_at"         .= issueCommentUpdatedAt
+        , "url"                .= issueCommentUrl
+        , "user"               .= issueCommentUser
         ]
 
 
 instance Arbitrary IssueComment where
     arbitrary = IssueComment
         <$> arbitrary
+        <*> arbitrary
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary

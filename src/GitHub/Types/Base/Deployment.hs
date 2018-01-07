@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 module GitHub.Types.Base.Deployment where
 
-import           Control.Applicative        ((<$>), (<*>))
+import           Control.Applicative        (pure, (<$>), (<*>))
 import           Data.Aeson                 (FromJSON (..), ToJSON (..), object)
 import           Data.Aeson.Types           (Value (..), (.:), (.=))
 import           Data.Text                  (Text)
@@ -10,24 +10,6 @@ import           Test.QuickCheck.Arbitrary  (Arbitrary (..))
 
 import           GitHub.Types.Base.DateTime
 import           GitHub.Types.Base.User
-
--- We don't know what the payload type is, yet. Other libraries put "Value"
--- there, also not knowing what is in it. The documentation is incorrect:
--- https://developer.github.com/v3/activity/events/types/#deploymentevent says
--- it's a string, but the example shows it's an empty object. Until we know
--- what this really is, we'll just assume it's an empty object.
-data EmptyObject = EmptyObject
-   deriving (Eq, Show, Read)
-
-instance FromJSON EmptyObject where
-    parseJSON (Object _) = return EmptyObject
-    parseJSON _ = fail "Deployment"
-
-instance ToJSON EmptyObject where
-    toJSON EmptyObject = object []
-
-instance Arbitrary EmptyObject where
-    arbitrary = return EmptyObject
 
 ------------------------------------------------------------------------------
 -- Deployment
@@ -38,7 +20,7 @@ data Deployment = Deployment
     , deploymentSha           :: Text
     , deploymentRef           :: Text
     , deploymentTask          :: Text
-    , deploymentPayload       :: EmptyObject
+    , deploymentPayload       :: Value
     , deploymentEnvironment   :: Text
     , deploymentDescription   :: Maybe Text
     , deploymentCreator       :: User
@@ -91,7 +73,7 @@ instance Arbitrary Deployment where
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
-        <*> arbitrary
+        <*> pure Null
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary

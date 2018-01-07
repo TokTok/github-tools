@@ -4,7 +4,7 @@ module GitHub.Types.Base.User where
 
 import           Control.Applicative       ((<$>), (<*>))
 import           Data.Aeson                (FromJSON (..), ToJSON (..), object)
-import           Data.Aeson.Types          (Value (..), (.:), (.=))
+import           Data.Aeson.Types          (Value (..), (.:), (.:?), (.=))
 import           Data.Text                 (Text)
 import           Data.Text.Arbitrary       ()
 import           Test.QuickCheck.Arbitrary (Arbitrary (..))
@@ -14,6 +14,7 @@ import           Test.QuickCheck.Arbitrary (Arbitrary (..))
 
 data User = User
     { userAvatarUrl         :: Text
+    , userEmail             :: Maybe Text
     , userEventsUrl         :: Text
     , userFollowersUrl      :: Text
     , userFollowingUrl      :: Text
@@ -22,6 +23,7 @@ data User = User
     , userHtmlUrl           :: Text
     , userId                :: Int
     , userLogin             :: Text
+    , userName              :: Maybe Text
     , userOrganizationsUrl  :: Text
     , userReceivedEventsUrl :: Text
     , userReposUrl          :: Text
@@ -36,6 +38,7 @@ data User = User
 instance FromJSON User where
     parseJSON (Object x) = User
         <$> x .: "avatar_url"
+        <*> x .:? "email"
         <*> x .: "events_url"
         <*> x .: "followers_url"
         <*> x .: "following_url"
@@ -44,6 +47,7 @@ instance FromJSON User where
         <*> x .: "html_url"
         <*> x .: "id"
         <*> x .: "login"
+        <*> x .:? "name"
         <*> x .: "organizations_url"
         <*> x .: "received_events_url"
         <*> x .: "repos_url"
@@ -59,6 +63,7 @@ instance FromJSON User where
 instance ToJSON User where
     toJSON User{..} = object
         [ "avatar_url"          .= userAvatarUrl
+        , "email"               .= userEmail
         , "events_url"          .= userEventsUrl
         , "followers_url"       .= userFollowersUrl
         , "following_url"       .= userFollowingUrl
@@ -67,6 +72,7 @@ instance ToJSON User where
         , "html_url"            .= userHtmlUrl
         , "id"                  .= userId
         , "login"               .= userLogin
+        , "name"                .= userName
         , "organizations_url"   .= userOrganizationsUrl
         , "received_events_url" .= userReceivedEventsUrl
         , "repos_url"           .= userReposUrl
@@ -81,6 +87,8 @@ instance ToJSON User where
 instance Arbitrary User where
     arbitrary = User
         <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
