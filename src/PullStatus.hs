@@ -68,6 +68,7 @@ makePullRequestInfo repoName (reviewers, pr) = PullRequestInfo
   where
     (user, branch) = Text.breakOn ":" . GitHub.pullRequestCommitLabel . GitHub.pullRequestHead $ pr
 
+    showMergeableState GitHub.StateBehind   = "behind"
     showMergeableState GitHub.StateBlocked  = "blocked"
     showMergeableState GitHub.StateClean    = "clean"
     showMergeableState GitHub.StateDirty    = "dirty"
