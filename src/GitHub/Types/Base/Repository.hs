@@ -10,13 +10,15 @@ import           Data.Text                   (Text)
 import           Test.QuickCheck.Arbitrary   (Arbitrary (..))
 
 import           GitHub.Types.Base.DateTime
+import           GitHub.Types.Base.License
 import           GitHub.Types.Base.RepoOwner
 
 ------------------------------------------------------------------------------
 -- Repository
 
 data Repository = Repository
-    { repositoryArchiveUrl       :: Text
+    { repositoryArchived         :: Bool
+    , repositoryArchiveUrl       :: Text
     , repositoryAssigneesUrl     :: Text
     , repositoryBlobsUrl         :: Text
     , repositoryBranchesUrl      :: Text
@@ -58,6 +60,7 @@ data Repository = Repository
     , repositoryLabelsUrl        :: Text
     , repositoryLanguage         :: Maybe Text
     , repositoryLanguagesUrl     :: Text
+    , repositoryLicense          :: License
     , repositoryMasterBranch     :: Maybe Text
     , repositoryMergesUrl        :: Text
     , repositoryMilestonesUrl    :: Text
@@ -94,7 +97,8 @@ data Repository = Repository
 
 instance FromJSON Repository where
     parseJSON (Object x) = Repository
-        <$> x .: "archive_url"
+        <$> x .: "archived"
+        <*> x .: "archive_url"
         <*> x .: "assignees_url"
         <*> x .: "blobs_url"
         <*> x .: "branches_url"
@@ -136,6 +140,7 @@ instance FromJSON Repository where
         <*> x .: "labels_url"
         <*> x .:? "language"
         <*> x .: "languages_url"
+        <*> x .: "license"
         <*> x .:? "master_branch"
         <*> x .: "merges_url"
         <*> x .: "milestones_url"
@@ -170,10 +175,10 @@ instance FromJSON Repository where
 
     parseJSON _ = fail "Repository"
 
-
 instance ToJSON Repository where
     toJSON Repository{..} = object
-        [ "archive_url"       .= repositoryArchiveUrl
+        [ "archived"          .= repositoryArchived
+        , "archive_url"       .= repositoryArchiveUrl
         , "assignees_url"     .= repositoryAssigneesUrl
         , "blobs_url"         .= repositoryBlobsUrl
         , "branches_url"      .= repositoryBranchesUrl
@@ -215,6 +220,7 @@ instance ToJSON Repository where
         , "labels_url"        .= repositoryLabelsUrl
         , "language"          .= repositoryLanguage
         , "languages_url"     .= repositoryLanguagesUrl
+        , "license"           .= repositoryLicense
         , "master_branch"     .= repositoryMasterBranch
         , "merges_url"        .= repositoryMergesUrl
         , "milestones_url"    .= repositoryMilestonesUrl
@@ -252,6 +258,8 @@ instance ToJSON Repository where
 instance Arbitrary Repository where
     arbitrary = Repository
         <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
