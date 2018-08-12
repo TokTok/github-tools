@@ -14,4 +14,4 @@ script:
 - stylish-haskell-lhs -i .
 - git diff --exit-code
 - stack --no-terminal test --coverage
-- shc github-tools testsuite
+- shc hs-github-tools testsuite

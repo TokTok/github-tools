@@ -1,10 +1,10 @@
 load("@io_tweag_rules_haskell//haskell:haskell.bzl", "haskell_library", "haskell_test")
 load("//tools:project.bzl", "project")
 
-project("github-tools")
+project("hs-github-tools")
 
 haskell_library(
-    name = "github-tools",
+    name = "hs-github-tools",
     srcs = glob(["src/**/*.*hs"]),
     compiler_flags = [
         "-j4",
@@ -57,7 +57,7 @@ haskell_test(
     src_strip_prefix = "test",
     visibility = ["//visibility:public"],
     deps = [
-        ":github-tools",
+        ":hs-github-tools",
         "//third_party/haskell:base",
         "@haskell_QuickCheck//:QuickCheck",
         "@haskell_aeson//:aeson",
